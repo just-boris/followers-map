@@ -1,0 +1,24 @@
+{
+  "name": "followers-map",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "codebird": "^2.6.0",
+    "d3-force": "^1.1.0",
+    "preact": "^8.2.5",
+    "preact-compat": "^3.17.0",
+    "react": "^16.0.0",
+    "react-dom": "^16.0.0",
+    "tachyons": "^4.8.1"
+  },
+  "devDependencies": {
+    "@just-boris/preact-scripts": "1.0.14"
+  },
+  "proxy": "https://api.twitter.com",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}
