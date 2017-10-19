@@ -13,17 +13,23 @@ export default class Twitter {
     return this.__call("oauth2_token");
   }
 
-  async getFriends(username) {
+  userByName(username) {
+    return this.__call("users_lookup", {
+      screen_name: username
+    });
+  }
+
+  async getFriends(id) {
     try {
-      return require(`../mocks/friends-${username.toLowerCase()}.json`);
+      return require(`../mocks/friends-ids-${id}.json`);
     } catch (e) {
-      console.log(username, 'hyi');
-      const response = await this.__call("friends_list", {
-        screen_name: username
-      });
-      console.log(username);
-      console.log(JSON.stringify(response));
-      return response;
+      return {};
+      // const response = await this.__call("friends_ids", {
+      //   user_id: id
+      // });
+      // console.log(id);
+      // console.log(JSON.stringify(response));
+      // return response;
     }
   }
 

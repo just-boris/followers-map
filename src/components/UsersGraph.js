@@ -3,59 +3,59 @@ import {
   forceSimulation,
   forceCenter,
   forceCollide,
-  forceLink
+  forceLink,
+  forceManyBody
 } from "d3-force";
 
 export default class UsersGraph extends Component {
   componentDidMount() {
     const height = window.innerHeight;
-    const { username, users } = this.props;
+    const { main, users } = this.props;
     const { offsetWidth: width } = this.el.parentElement;
     this.setState({ width, height });
     this.simulation = forceSimulation()
       .force("center", forceCenter(width / 2, height / 2))
+      .force("charge", forceManyBody())
       .force("collision", forceCollide(d => d.r + 5))
-      .force("link", forceLink().id(d => d.id));
+      .force("link", forceLink().id(d => d.id).distance(10));
     this.simulation.on("tick", this.tickCallback);
+    this.updateSimulation(main, users);
+  }
+
+  componentWillReceiveProps({ username, users }) {
     this.updateSimulation(username, users);
   }
 
-  componentWillReceiveProps({username, users}) {
-    this.updateSimulation(username, users);
-  }
-
-  updateSimulation(username, users) {
-    const main = {
-      id: username,
-      textColor: "4682b4",
-      background: "357edd",
+  updateSimulation(main, users) {
+    const center = {
+      id: main,
+      class: "color-blue",
       r: 15
     };
     const nodes = [
-      main,
+      center,
       ...users.map(user => ({
-        id: user.screen_name,
+        id: user.id,
         r: 10,
-        textColor: user.profile_text_color,
-        background: user.profile_background_color
+        class: "color-light"
       }))
     ];
     const links = users
       .map(user => {
         return [
           {
-            source: username,
-            target: user.screen_name,
-            value: 2
+            source: main,
+            target: user.id,
+            value: 0
           },
           ...(user.friends || [])
-            .filter(f => {
-              return users.find(u => u.screen_name === f.screen_name);
+            .filter(friendId => {
+              return users.find(u => u.id === friendId);
             })
-            .map(friend => ({
-              source: friend.screen_name,
-              target: user.screen_name,
-              value: 2
+            .map(friendId => ({
+              source: friendId,
+              target: user.id,
+              value: 10
             }))
         ];
       })
@@ -63,7 +63,6 @@ export default class UsersGraph extends Component {
     this.simulation.nodes(nodes);
     this.simulation.force("link").links(links);
     this.setState({ nodes, links });
-    // this.simulation.restart();
   }
 
   tickCallback = () => {
@@ -96,15 +95,7 @@ export default class UsersGraph extends Component {
             nodes.map(node => (
               <g>
                 <title>{node.id}</title>
-                <circle
-                  r={node.r}
-                  cx={node.x}
-                  cy={node.y}
-                  style={{
-                    fill: `#${node.background}`,
-                    stroke: `#${node.textColor}`
-                  }}
-                />
+                <circle r={node.r} cx={node.x} cy={node.y} class={node.class} />
               </g>
             ))}
         </svg>
