@@ -21,11 +21,12 @@ export default class Twitter {
 
   async getFriends(id) {
     try {
-      return require(`../mocks/friends-ids-${id}.json`);
+      return await import(`../mocks/friends-ids-${id}.json`);
     } catch (e) {
       return {};
       // const response = await this.__call("friends_ids", {
-      //   user_id: id
+      //   user_id: id,
+      //   stringify_ids: 'true'
       // });
       // console.log(id);
       // console.log(JSON.stringify(response));

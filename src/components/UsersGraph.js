@@ -17,7 +17,12 @@ export default class UsersGraph extends Component {
       .force("center", forceCenter(width / 2, height / 2))
       .force("charge", forceManyBody())
       .force("collision", forceCollide(d => d.r + 5))
-      .force("link", forceLink().id(d => d.id).distance(10));
+      .force(
+        "link",
+        forceLink()
+          .id(d => d.id)
+          .distance(10)
+      );
     this.simulation.on("tick", this.tickCallback);
     this.updateSimulation(main, users);
   }
@@ -66,10 +71,13 @@ export default class UsersGraph extends Component {
   }
 
   tickCallback = () => {
-    if (this.state.nodes) {
-      this.setState({
-        // d3 mutates original objects
-        nodes: this.state.nodes.slice()
+    if (this.state.nodes && !this.nextFrame) {
+      this.nextFrame = requestAnimationFrame(() => {
+        this.nextFrame = null;
+        this.setState({
+          // d3 mutates original objects
+          nodes: this.state.nodes.slice()
+        });
       });
     }
   };

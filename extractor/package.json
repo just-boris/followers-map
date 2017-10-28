@@ -1,0 +1,7 @@
+{
+  "name": "followers-extractor",
+  "version": "0.0.0",
+  "dependencies": {
+    "twit": "^2.2.9"
+  }
+}
