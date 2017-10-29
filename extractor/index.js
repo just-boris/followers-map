@@ -15,6 +15,7 @@ const username = "boriscoder";
     screen_name: username
   });
   const friends = await getFriends(user.id_str);
+  await getUsersLookup(friends);
   for (const friend of friends) {
     const result = await getFriends(friend);
   }
@@ -51,6 +52,20 @@ async function getFriends(id) {
     const result = await getFriendsRemote(id);
     cacheFile(filename, result);
     console.log("write file", id);
-    return result;
+    return result.ids;
+  }
+}
+
+async function getUsersLookup(ids) {
+  for (const page of Array.from({ length: Math.ceil(ids.length / 100) }, (_, i) => i)) {
+    const chunk = ids.slice(100 * page, 100 * (page + 1));
+    const filename = `${mocksFolder}/users-lookup-${page}.json`
+    try {
+      return require(filename);
+    } catch(e) {
+      const result = await client.get("users/lookup", { user_id: chunk.join(",") });
+      console.log('write lookup', page);
+      cacheFile(filename, result);
+    }
   }
 }

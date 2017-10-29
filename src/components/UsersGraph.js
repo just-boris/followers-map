@@ -1,6 +1,22 @@
 import { h, Component } from "preact";
 import { forceSimulation, forceCenter, forceCollide, forceLink, forceManyBody } from "d3-force";
 
+function forceExtent(maxX, maxY) {
+  let nodes;
+
+  function force() {
+    for (const node of nodes) {
+      const r = node.r;
+      node.x = Math.max(Math.min(node.x, maxX - r), r);
+      node.y = Math.max(Math.min(node.y, maxY -r), r);
+    }
+  }
+
+  force.initialize = _ => (nodes = _);
+
+  return force;
+}
+
 function Links({ links }) {
   if (!links) {
     return null;
@@ -12,7 +28,7 @@ function Links({ links }) {
           value > 0 && (
             <g>
               <line
-                style={{ stroke: "gray" }}
+                style={{ stroke: "#ccc" }}
                 x1={source.x}
                 y1={source.y}
                 x2={target.x}
@@ -32,9 +48,11 @@ function Nodes({ nodes }) {
   return (
     <g>
       {nodes.map(node => (
-        <g>
-          <title>{node.id}</title>
-          <circle r={node.r} cx={node.x} cy={node.y} class={node.class} />
+        <g transform={`translate(${node.x - node.r}, ${node.y - node.r})`}>
+          <circle r={node.r} cx={node.r} cy={node.r} class={node.class} />
+          <text dy="-1" dx={node.r} textAnchor="middle" fontSize="8">
+            {node.screen_name}
+          </text>
         </g>
       ))}
     </g>
@@ -50,26 +68,20 @@ export default class UsersGraph extends Component {
     this.simulation = forceSimulation()
       .force("center", forceCenter(width / 2, height / 2))
       .force("charge", forceManyBody().strength(-80))
+      .force("bounds", forceExtent(width, height))
       .force("collision", forceCollide(d => d.r))
       .force("link", forceLink().id(d => d.id));
     this.simulation.on("tick", this.tickCallback);
-    this.updateSimulation(main, users);
-  }
-
-  componentWillReceiveProps({ username, users }) {
-    this.updateSimulation(username, users);
-  }
-
-  updateSimulation(main, users) {
     const center = {
       id: main,
+      screen_name: "Your account",
       class: "color-blue",
       r: 15
     };
     const nodes = [
       center,
       ...users.map(user => ({
-        id: user.id,
+        ...user,
         r: 10,
         class: "color-light"
       }))
@@ -77,11 +89,11 @@ export default class UsersGraph extends Component {
     const links = users
       .map(user => {
         return [
-          {
-            source: main,
-            target: user.id,
-            value: 0
-          },
+          // {
+          //   source: main,
+          //   target: user.id,
+          //   value: 0
+          // },
           ...(user.friends || [])
             .filter(friendId => {
               return users.find(u => u.id === friendId);
@@ -113,27 +125,30 @@ export default class UsersGraph extends Component {
 
   onMouseDown = event => {
     const { offsetX, offsetY } = event;
-    this.draggedItem = this.simulation.find(offsetX, offsetY);
+    this.setState({
+      draggedItem: this.simulation.find(offsetX, offsetY)
+    });
     this.simulation.alphaTarget(0.3).restart();
   };
 
   onMouseMove = event => {
-    if (this.draggedItem) {
-      const { offsetX, offsetY } = event;
-      this.draggedItem.fx = offsetX;
-      this.draggedItem.fy = offsetY;
+    const { draggedItem } = this.state;
+    if (draggedItem) {
+      draggedItem.fx = event.offsetX;
+      draggedItem.fy = event.offsetY;
     }
   };
 
   onMouseUp = () => {
-    this.draggedItem.fx = null;
-    this.draggedItem.fy = null;
-    this.draggedItem = false;
+    const { draggedItem } = this.state;
+    draggedItem.fx = null;
+    draggedItem.fy = null;
     this.simulation.alphaTarget(0);
+    this.setState({ draggedItem: null });
   };
 
   render() {
-    const { nodes, links, height, width } = this.state;
+    const { nodes, links, height, width, draggedItem } = this.state;
     return (
       <div
         ref={el => (this.el = el)}
@@ -141,7 +156,7 @@ export default class UsersGraph extends Component {
         onMouseMove={this.onMouseMove}
         onMouseUp={this.onMouseUp}
       >
-        <svg style={{ height, width }}>
+        <svg style={{ height, width, userSelect: draggedItem ? "none" : "" }}>
           <Links links={links} />
           <Nodes nodes={nodes} />
         </svg>

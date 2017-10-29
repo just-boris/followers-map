@@ -3,10 +3,7 @@ import Codebird from "codebird";
 export default class Twitter {
   constructor() {
     this.cb = new Codebird();
-    this.cb.setConsumerKey(
-      "FFUuamGgKkXA5oHbNPtubQ",
-      "zTESbQPPM2FzYqUHvUV7lCIavQ6A0db74Pjn0W4N4"
-    );
+    this.cb.setConsumerKey("FFUuamGgKkXA5oHbNPtubQ", "zTESbQPPM2FzYqUHvUV7lCIavQ6A0db74Pjn0W4N4");
   }
 
   initialize() {
@@ -17,6 +14,23 @@ export default class Twitter {
     return this.__call("users_lookup", {
       screen_name: username
     });
+  }
+
+  async usersById(ids) {
+    const users = [];
+    for (const page of Array.from({ length: Math.ceil(ids.length / 100) }, (_, i) => i)) {
+      const chunk = ids.slice(100 * page, 100 * (page + 1));
+      let response;
+      try {
+        response = require(`../mocks/users-lookip-${page}.json`)
+      } catch(e) {
+        response = await this.__call("users_lookup", {
+          user_id: chunk.join(',')
+        });
+      }
+      users.push(...response);
+    }
+    return users;
   }
 
   async getFriends(id) {

@@ -17,21 +17,13 @@ class App extends Component {
     await twitter.initialize();
     const [user] = await twitter.userByName(this.state.username);
     const { ids } = await twitter.getFriends(user.id);
-    const users = [];
-    for (const id of ids) {
-      const { ids } = await twitter.getFriends(id);
-      users.push({ id: id, friends: ids });
+    const users = await twitter.usersById(ids);
+    for (const user of users) {
+      user.id = user.id_str;
+      const { ids } = await twitter.getFriends(user.id);
+      user.friends = ids;
     }
     this.setState({ userId: user.id, users });
-  }
-
-  updateUser(name, newData) {
-    const { users } = this.state;
-    this.setState({
-      users: users.map(
-        user => (user.id === name ? { ...user, ...newData } : user)
-      )
-    });
   }
 
   render() {
