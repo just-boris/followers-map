@@ -1,11 +1,45 @@
 import { h, Component } from "preact";
-import {
-  forceSimulation,
-  forceCenter,
-  forceCollide,
-  forceLink,
-  forceManyBody
-} from "d3-force";
+import { forceSimulation, forceCenter, forceCollide, forceLink, forceManyBody } from "d3-force";
+
+function Links({ links }) {
+  if (!links) {
+    return null;
+  }
+  return (
+    <g>
+      {links.map(
+        ({ value, source, target }) =>
+          value > 0 && (
+            <g>
+              <line
+                style={{ stroke: "gray" }}
+                x1={source.x}
+                y1={source.y}
+                x2={target.x}
+                y2={target.y}
+              />
+            </g>
+          )
+      )}
+    </g>
+  );
+}
+
+function Nodes({ nodes }) {
+  if (!nodes) {
+    return null;
+  }
+  return (
+    <g>
+      {nodes.map(node => (
+        <g>
+          <title>{node.id}</title>
+          <circle r={node.r} cx={node.x} cy={node.y} class={node.class} />
+        </g>
+      ))}
+    </g>
+  );
+}
 
 export default class UsersGraph extends Component {
   componentDidMount() {
@@ -15,14 +49,9 @@ export default class UsersGraph extends Component {
     this.setState({ width, height });
     this.simulation = forceSimulation()
       .force("center", forceCenter(width / 2, height / 2))
-      .force("charge", forceManyBody())
-      .force("collision", forceCollide(d => d.r + 5))
-      .force(
-        "link",
-        forceLink()
-          .id(d => d.id)
-          .distance(10)
-      );
+      .force("charge", forceManyBody().strength(-80))
+      .force("collision", forceCollide(d => d.r))
+      .force("link", forceLink().id(d => d.id));
     this.simulation.on("tick", this.tickCallback);
     this.updateSimulation(main, users);
   }
@@ -60,7 +89,7 @@ export default class UsersGraph extends Component {
             .map(friendId => ({
               source: friendId,
               target: user.id,
-              value: 10
+              value: 5
             }))
         ];
       })
@@ -82,30 +111,39 @@ export default class UsersGraph extends Component {
     }
   };
 
+  onMouseDown = event => {
+    const { offsetX, offsetY } = event;
+    this.draggedItem = this.simulation.find(offsetX, offsetY);
+    this.simulation.alphaTarget(0.3).restart();
+  };
+
+  onMouseMove = event => {
+    if (this.draggedItem) {
+      const { offsetX, offsetY } = event;
+      this.draggedItem.fx = offsetX;
+      this.draggedItem.fy = offsetY;
+    }
+  };
+
+  onMouseUp = () => {
+    this.draggedItem.fx = null;
+    this.draggedItem.fy = null;
+    this.draggedItem = false;
+    this.simulation.alphaTarget(0);
+  };
+
   render() {
     const { nodes, links, height, width } = this.state;
     return (
-      <div ref={el => (this.el = el)}>
+      <div
+        ref={el => (this.el = el)}
+        onMouseDown={this.onMouseDown}
+        onMouseMove={this.onMouseMove}
+        onMouseUp={this.onMouseUp}
+      >
         <svg style={{ height, width }}>
-          {links &&
-            links.map(link => (
-              <g>
-                <line
-                  style={{ stroke: "gray" }}
-                  x1={link.source.x}
-                  y1={link.source.y}
-                  x2={link.target.x}
-                  y2={link.target.y}
-                />
-              </g>
-            ))}
-          {nodes &&
-            nodes.map(node => (
-              <g>
-                <title>{node.id}</title>
-                <circle r={node.r} cx={node.x} cy={node.y} class={node.class} />
-              </g>
-            ))}
+          <Links links={links} />
+          <Nodes nodes={nodes} />
         </svg>
       </div>
     );
